@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Journey Evaluation Form</title>
+<style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: auto; background: #fff; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    header img { height: 60px; }
+    h1 { text-align: center; margin-bottom: 10px; }
+    p { font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+    th, td { border: 1px solid #000; padding: 5px; text-align: center; }
+    th { background-color: #f0f0f0; }
+    .question { text-align: left; }
+    canvas { border: 1px solid #ccc; background: #fff; }
+    button { padding: 10px 20px; background: #007BFF; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+</style>
+</head>
+<body>
+
+<header>
+    <img src="eu_logo.png" alt="EU Logo">
+    <img src="sicap_logo.png" alt="SICAP Logo">
+</header>
+
+<h1>My Journey Evaluation Form</h1>
+<p>This tool will help you to better understand your personal and professional skills and to think about aspects of your life you would like to improve...</p>
+
+<form id="journeyForm" action="https://formspree.io/f/xldlzqrd" method="POST">
+    <label>Name: <input type="text" name="name" required></label><br><br>
+    <label>Date: <input type="date" name="date" required></label><br><br>
+    <label>IRIS ID: <input type="text" name="iris_id"></label><br><br>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Statement</th>
+                <th>Strongly Disagree</th>
+                <th>Disagree</th>
+                <th>Somewhat Disagree</th>
+                <th>Neither Agree nor Disagree</th>
+                <th>Somewhat Agree</th>
+                <th>Agree</th>
+                <th>Strongly Agree</th>
+            </tr>
+        </thead>
+        <tbody id="questionRows"></tbody>
+    </table>
+
+    <h3>Signature</h3>
+    <canvas id="signature-pad" width="600" height="200"></canvas><br>
+    <button type="button" onclick="clearSignature()">Clear Signature</button>
+    <input type="hidden" name="signature" id="signature">
+
+    <br><br>
+    <button type="submit">Submit</button>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    const questions = [
+        "I can confidently complete forms and applications",
+        "My reading and writing are good enough for everyday life",
+        "My maths is good enough for everyday life",
+        "I am a confident person",
+        "I know what I am good at",
+        "I feel comfortable around people in a formal setting like work or education",
+        "I can achieve things I set my mind to",
+        "I am happy with some of the things I have achieved in my life",
+        "I am comfortable trying new things",
+        "I feel I can make changes in my life",
+        "I feel I can work out most challenges that come my way",
+        "I feel ready to take the next steps towards my goals (for example in work or education)",
+        "I know what I would like to do in the next few years",
+        "I have activities or hobbies I enjoy doing",
+        "I have opportunities to spend time with others doing things I care about",
+        "I feel part of a social group, club or community",
+        "I have someone I can count on for support",
+        "I know people that I can ask for advice",
+        "I am comfortable speaking in a small group",
+        "I am good at expressing my views",
+        "I am comfortable talking to people I do not know very well",
+        "I am comfortable speaking to people in a position of authority (for example a boss or tutor)",
+        "I ask for help when I need it",
+        "I am good at being on time for appointments, work or other activities",
+        "I feel I have the right skills to find a job if I want one",
+        "I feel I have the right skills to complete a course if I start one",
+        "I know how to get the information I need to help me with jobs, courses or other areas of my life"
+    ];
+
+    const tbody = document.getElementById('questionRows');
+    questions.forEach((q, i) => {
+        let row = `<tr><td class='question'>${i+1}. ${q}</td>`;
+        ["Strongly Disagree","Disagree","Somewhat Disagree","Neither Agree nor Disagree","Somewhat Agree","Agree","Strongly Agree"].forEach(opt => {
+            row += `<td><input type='radio' name='q${i+1}' value='${opt}' required></td>`;
+        });
+        row += `</tr>`;
+        tbody.innerHTML += row;
+    });
+
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas);
+
+    function clearSignature() {
+        signaturePad.clear();
+    }
+
+    document.getElementById('journeyForm').addEventListener('submit', function(e) {
+        if (signaturePad.isEmpty()) {
+            alert('Please add your signature before submitting.');
+            e.preventDefault();
+            return;
+        }
+        document.getElementById('signature').value = signaturePad.toDataURL();
+
+        // Generate PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text('My Journey Evaluation Form', 10, 10);
+        doc.text(`Name: ${this.name.value}`, 10, 20);
+        doc.text(`Date: ${this.date.value}`, 10, 30);
+        doc.text(`IRIS ID: ${this.iris_id.value}`, 10, 40);
+
+        let y = 50;
+        questions.forEach((q, i) => {
+            const ans = this[`q${i+1}`].value;
+            doc.text(`${i+1}. ${q}: ${ans}`, 10, y);
+            y += 7;
+        });
+
+        doc.addImage(signaturePad.toDataURL(), 'PNG', 10, y, 50, 20);
+        doc.save('My_Journey_Form.pdf');
+    });
+</script>
+
+</body>
+</html>
